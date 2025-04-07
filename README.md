@@ -134,9 +134,4 @@ Hệ thống phân loại giao dịch thành 4 danh mục rủi ro:
 ## Liên hệ
 
 Nếu có bất kỳ câu hỏi hoặc góp ý nào, vui lòng liên hệ:
-- Email: [email của bạn]
-
----
-
-Tác giả: [Tên của bạn]
-Ngày: [Ngày tháng năm]
+- Email: phamngocthaison@gmail.com
