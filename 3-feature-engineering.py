@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
@@ -77,13 +77,23 @@ print(f"Kích thước tập kiểm tra: {X_test.shape}")
 # Bước 5: Tạo pipeline tiền xử lý với sparse matrices
 print("\nTạo pipeline tiền xử lý...")
 
+# Định nghĩa các hàm chuyển đổi an toàn
+def convert_to_float(X):
+    return X.astype(float)
+
+def convert_to_str(X):
+    return X.astype(str)
+
 # Tạo bộ tiền xử lý cho đặc trưng số và phân loại
 numeric_transformer = Pipeline(steps=[
+    ('converter', FunctionTransformer(convert_to_float)),
     ('scaler', StandardScaler())
 ])
 
+# Giới hạn các giá trị trong categorical để giảm số lượng đặc trưng
 categorical_transformer = Pipeline(steps=[
-    ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=True))
+    ('converter', FunctionTransformer(convert_to_str)),
+    ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=True, max_categories=10))
 ])
 
 # Kết hợp các bộ tiền xử lý
@@ -91,7 +101,23 @@ preprocessor = ColumnTransformer(
     transformers=[
         ('num', numeric_transformer, numeric_features),
         ('cat', categorical_transformer, categorical_features)
-    ])
+    ],
+    remainder='drop'  # Bỏ qua các cột không được xử lý
+)
+
+# Kiểm tra số lượng giá trị duy nhất trong các cột categorical
+print("Kiểm tra số lượng giá trị duy nhất trong các cột categorical:")
+for col in categorical_features:
+    unique_values = X_train[col].nunique()
+    print(f"Cột {col}: {unique_values} giá trị duy nhất")
+
+# Ước tính số lượng đặc trưng sau one-hot encoding
+estimated_features = len(numeric_features)
+for col in categorical_features:
+    unique_values = min(X_train[col].nunique(), 10)  # Giới hạn tối đa 10 giá trị
+    estimated_features += unique_values
+
+print(f"Ước tính số lượng đặc trưng sau khi xử lý: {estimated_features}")
 
 # Fit preprocessor trên toàn bộ dữ liệu huấn luyện trước
 print("Fitting preprocessor trên toàn bộ dữ liệu huấn luyện...")
@@ -139,8 +165,13 @@ np.save('output3/y_train.npy', y_train.values)
 np.save('output3/y_test.npy', y_test.values)
 
 # Lưu thông tin đặc trưng
+print("\nLưu thông tin đặc trưng...")
+feature_names = {
+    'numeric_features': numeric_features,
+    'categorical_features': categorical_features
+}
 with open('output3/feature_names.pkl', 'wb') as f:
-    pickle.dump(preprocessor.get_feature_names_out(), f)
+    pickle.dump(feature_names, f)
 
 # Lưu indices test
 test_indices = X_test.index
