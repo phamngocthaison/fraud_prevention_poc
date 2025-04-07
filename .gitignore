@@ -1,0 +1,13 @@
+.idea/
+data/
+venv/
+*.pyc
+output/
+output2/
+*.pkl
+*.pklz
+output3/
+output4/
+output5/
+output6/
+.DS_Store
