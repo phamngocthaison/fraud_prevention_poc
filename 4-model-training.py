@@ -26,41 +26,43 @@ if not os.path.exists('output4'):
 print("Đang đọc dữ liệu đã biến đổi...")
 X_train = sparse.load_npz('output3/X_train_transformed.npz')
 X_test = sparse.load_npz('output3/X_test_transformed.npz')
-y_train = np.load('output3/y_train.npy')
-y_test = np.load('output3/y_test.npy')
+y_train = np.load('output3/y_train.npy').astype(np.int32)  # Chuyển sang int32
+y_test = np.load('output3/y_test.npy').astype(np.int32)    # Chuyển sang int32
+
+# Chuyển đổi kiểu dữ liệu
+X_train = X_train.astype(np.float32)
+y_train = y_train.astype(np.int32)
+
+# Undersampling thay vì SMOTE
+rus = RandomUnderSampler(random_state=42)
+X_train_resampled, y_train_resampled = rus.fit_resample(X_train, y_train)
 
 print(f"Kích thước tập huấn luyện: {X_train.shape}")
 print(f"Kích thước tập kiểm tra: {X_test.shape}")
 print(f"Tỷ lệ gian lận trong tập huấn luyện: {np.mean(y_train) * 100:.2f}%")
 print(f"Tỷ lệ gian lận trong tập kiểm tra: {np.mean(y_test) * 100:.2f}%")
 
-# Bước 1: Cân bằng lại dữ liệu với SMOTE
-print("\nĐang cân bằng dữ liệu với SMOTE...")
+# Bước 1: Cân bằng lại dữ liệu với undersampling thay vì SMOTE
+print("\nĐang cân bằng dữ liệu với undersampling...")
 start_time = time.time()
-smote = SMOTE(random_state=42)
-X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+
 smote_time = time.time() - start_time
 
-print(f"Kích thước tập huấn luyện sau SMOTE: {X_train_resampled.shape}")
-print(f"Phân bố lớp sau SMOTE: {np.bincount(y_train_resampled.astype(int))}")
-print(f"Tỷ lệ gian lận sau SMOTE: {np.mean(y_train_resampled) * 100:.2f}%")
-print(f"Thời gian SMOTE: {smote_time:.2f} giây")
+print(f"Kích thước tập huấn luyện sau undersampling: {X_train_resampled.shape}")
+print(f"Phân bố lớp sau undersampling: {np.bincount(y_train_resampled.astype(int))}")
+print(f"Tỷ lệ gian lận sau undersampling: {np.mean(y_train_resampled) * 100:.2f}%")
+print(f"Thời gian undersampling: {smote_time:.2f} giây")
 
 # Bước 2: Huấn luyện mô hình Random Forest cơ bản
 print("\nHuấn luyện mô hình Random Forest cơ bản...")
 rf_model = RandomForestClassifier(
-    n_estimators=100,
+    n_estimators=30,  # Giảm số lượng cây xuống nữa
+    max_samples=0.3,  # Sử dụng 30% dữ liệu cho mỗi cây
+    max_depth=10,     # Giới hạn độ sâu của cây
     random_state=42,
-    n_jobs=-1,
+    n_jobs=-1,  # Sử dụng tất cả CPU cores
     verbose=1  # Hiển thị progress
 )
-
-# Ước lượng thời gian huấn luyện
-sample_size = min(1000, X_train_resampled.shape[0])
-start_time = time.time()
-rf_model.fit(X_train_resampled[:sample_size], y_train_resampled[:sample_size])
-estimated_time = (time.time() - start_time) * (X_train_resampled.shape[0] / sample_size)
-print(f"Ước lượng thời gian huấn luyện Random Forest: {estimated_time/60:.1f} phút")
 
 # Huấn luyện thực tế
 start_time = time.time()
@@ -80,26 +82,58 @@ print(f"AUC: {roc_auc_score(y_test, rf_prob):.4f}")
 # Bước 3: Huấn luyện mô hình XGBoost
 print("\nHuấn luyện mô hình XGBoost cơ bản...")
 scale_pos_weight = sum(y_train == 0) / sum(y_train == 1)
+
+# Tạo custom callback class
+class ProgressCallback(xgb.callback.TrainingCallback):
+    def __init__(self, pbar):
+        self.pbar = pbar
+        
+    def after_iteration(self, model, epoch, evals_log):
+        self.pbar.update(1)
+        if epoch % 10 == 0:
+            auc = evals_log['validation_0']['auc'][-1]
+            self.pbar.set_postfix({"AUC": f"{auc:.4f}"})
+        return False  # Tiếp tục training
+
 xgb_model = xgb.XGBClassifier(
     objective='binary:logistic',
     scale_pos_weight=scale_pos_weight,
     random_state=42,
-    n_jobs=-1,
-    verbosity=1  # Hiển thị progress
+    tree_method='gpu_hist',  # Sử dụng GPU
+    gpu_id=0,  # Sử dụng GPU đầu tiên
+    n_jobs=-1,  # Sử dụng tất cả CPU cores cho các tác vụ không phải GPU
+    verbosity=1,  # Hiển thị progress
+    max_depth=6,  # Giới hạn độ sâu của cây
+    learning_rate=0.1,  # Tăng learning rate
+    subsample=0.8,  # Sử dụng 80% dữ liệu cho mỗi cây
+    colsample_bytree=0.8,  # Sử dụng 80% đặc trưng cho mỗi cây
+    n_estimators=100,  # Số lượng cây
+    min_child_weight=1,  # Giảm giá trị này để tăng tốc độ
+    gamma=0,  # Giảm giá trị này để tăng tốc độ
+    reg_alpha=0,  # Giảm giá trị này để tăng tốc độ
+    reg_lambda=1,  # Giữ giá trị này ở mức trung bình
+    eval_metric='auc'  # Sửa lại thành chuỗi
 )
 
-# Ước lượng thời gian huấn luyện
-sample_size = min(1000, X_train_resampled.shape[0])
+# Huấn luyện thực tế với progress bar
+print("Bắt đầu huấn luyện XGBoost...")
 start_time = time.time()
-xgb_model.fit(X_train_resampled[:sample_size], y_train_resampled[:sample_size])
-estimated_time = (time.time() - start_time) * (X_train_resampled.shape[0] / sample_size)
-print(f"Ước lượng thời gian huấn luyện XGBoost: {estimated_time/60:.1f} phút")
 
-# Huấn luyện thực tế
-start_time = time.time()
-xgb_model.fit(X_train_resampled, y_train_resampled)
+# Tạo progress bar cho quá trình huấn luyện
+with tqdm(total=xgb_model.n_estimators, desc="Training XGBoost") as pbar:
+    progress_callback = ProgressCallback(pbar)
+    
+    # Cập nhật callback trong model
+    xgb_model.set_params(callbacks=[progress_callback])
+    
+    xgb_model.fit(
+        X_train_resampled, 
+        y_train_resampled,
+        eval_set=[(X_test, y_test)]
+    )
+
 xgb_train_time = time.time() - start_time
-print(f"Thời gian huấn luyện XGBoost thực tế: {xgb_train_time/60:.1f} phút")
+print(f"\nThời gian huấn luyện XGBoost thực tế: {xgb_train_time/60:.1f} phút")
 
 # Đánh giá mô hình XGBoost
 print("\nĐánh giá mô hình XGBoost trên tập kiểm tra...")
@@ -294,11 +328,17 @@ with open('output4/random_forest_model.pkl', 'wb') as f:
 print("Đã lưu mô hình Random Forest vào 'output4/random_forest_model.pkl'")
 
 # Lưu mô hình XGBoost
+print("Đang lưu mô hình XGBoost...")
+# Loại bỏ callback trước khi lưu
+xgb_model.set_params(callbacks=None)
 with open('output4/xgboost_model.pkl', 'wb') as f:
     pickle.dump(xgb_model, f)
 print("Đã lưu mô hình XGBoost vào 'output4/xgboost_model.pkl'")
 
 # Lưu mô hình tốt nhất
+print("Đang lưu mô hình tốt nhất...")
+if best_model_name == "XGBoost":
+    best_model.set_params(callbacks=None)
 with open('output4/best_model.pkl', 'wb') as f:
     pickle.dump(best_model, f)
 print(f"Đã lưu mô hình tốt nhất ({best_model_name}) vào 'output4/best_model.pkl'")

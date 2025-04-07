@@ -14,7 +14,7 @@ if not os.path.exists('output'):
 
 # Bước 1: Đọc dữ liệu giao dịch và nhãn
 print("Đang đọc dữ liệu giao dịch...")
-transactions = pd.read_csv('data/Transactions Data.csv')
+transactions = pd.read_csv('data/transactions_data.csv')
 print(f"Số lượng giao dịch trong tập dữ liệu: {transactions.shape[0]}")
 
 print("\nĐang đọc nhãn gian lận từ file JSON...")
