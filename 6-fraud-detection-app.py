@@ -207,13 +207,11 @@ def load_model():
     # Tải thông tin đặc trưng
     with open(os.path.join(model_dir, 'feature_info.pkl'), 'rb') as f:
         feature_info = pickle.load(f)
-        st.write(f"Đã tải thông tin đặc trưng: {feature_info}")
-    
+
     # Tải feature selector
     with open(os.path.join(model_dir, 'feature_selector.pkl'), 'rb') as f:
         selector = pickle.load(f)
-        st.write("Đã tải feature selector")
-    
+
     # Tạo preprocessor mới
     preprocessor = SimplePreprocessor(
         feature_info['numeric_features'],
@@ -265,9 +263,6 @@ def evaluate_risk(transaction_data):
 
     try:
         # Thông tin dữ liệu đầu vào
-        st.write("Đang xử lý dữ liệu đầu vào...")
-        
-        # Đảm bảo kiểu dữ liệu
         processed_data = transaction_data.copy()
         
         # Xử lý dữ liệu numeric
@@ -330,14 +325,11 @@ def evaluate_risk(transaction_data):
             risk_score = max(0, min(100, risk_score))
             
             # Ghi log chi tiết về các yếu tố ảnh hưởng
-            st.write("### Chi tiết điểm rủi ro:")
             factor_df = pd.DataFrame({
                 'Yếu tố': list(risk_factors.keys()),
                 'Điểm ảnh hưởng': list(risk_factors.values())
             })
             st.dataframe(factor_df)
-            
-            st.write(f"Tổng điểm rủi ro: {risk_score:.2f}/100")
             
             # Tính toán xác suất gian lận dựa trên điểm rủi ro
             fraud_probability = risk_score / 100
@@ -357,13 +349,10 @@ def evaluate_risk(transaction_data):
         
         # Xử lý dữ liệu đã tiền xử lý để tạo ra thông tin hiển thị về mô hình
         try:
-            st.write("Đang tiền xử lý dữ liệu cho mô hình...")
             # Chuyển đổi dữ liệu bằng preprocessor
             X_processed = preprocessor.transform(processed_data)
             
-            # Hiển thị thông tin về kích thước đặc trưng
-            st.write(f"Kích thước dữ liệu sau tiền xử lý: {X_processed.shape}")
-            
+
             # Chuẩn bị dữ liệu cho model (code giữ nguyên)
             expected_features = feature_info.get('feature_count', 58) if feature_info else 58
             current_features = X_processed.shape[1]
@@ -371,8 +360,6 @@ def evaluate_risk(transaction_data):
             # Đảm bảo đủ số cột (code giữ nguyên)
             if current_features < expected_features:
                 missing_cols = expected_features - current_features
-                st.write(f"Thêm {missing_cols} cột trống để đạt đủ {expected_features} đặc trưng")
-                
                 if isinstance(X_processed, pd.DataFrame):
                     zeros = pd.DataFrame(np.zeros((X_processed.shape[0], missing_cols)))
                     X_processed = pd.concat([X_processed, zeros], axis=1)
@@ -387,7 +374,6 @@ def evaluate_risk(transaction_data):
             
             # Cắt bớt nếu có quá nhiều đặc trưng (code giữ nguyên)
             elif current_features > expected_features:
-                st.warning(f"Số lượng đặc trưng ({current_features}) nhiều hơn số lượng mong đợi ({expected_features}). Cắt bớt...")
                 if isinstance(X_processed, pd.DataFrame):
                     X_processed = X_processed.iloc[:, :expected_features]
                 else:
@@ -396,11 +382,9 @@ def evaluate_risk(transaction_data):
             # Xử lý feature selection (code giữ nguyên)
             if selector is not None:
                 try:
-                    st.write(f"Áp dụng feature selection trên dữ liệu có {X_processed.shape[1]} đặc trưng")
                     if isinstance(X_processed, pd.DataFrame):
                         X_processed = X_processed.values
                     X_processed = selector.transform(X_processed)
-                    st.write(f"Kích thước sau feature selection: {X_processed.shape}")
                 except Exception as e:
                     st.error(f"Lỗi khi áp dụng feature selection: {e}")
                     st.write("Bỏ qua feature selection và sử dụng dữ liệu trước khi transform.")
@@ -409,21 +393,15 @@ def evaluate_risk(transaction_data):
             if not isinstance(X_processed, np.ndarray):
                 X_processed = X_processed.toarray() if hasattr(X_processed, 'toarray') else np.array(X_processed)
             
-            st.write(f"Kích thước cuối cùng: {X_processed.shape}")
-            
+
             # Thực hiện dự đoán với model để hiển thị kết quả model dự đoán
             st.write("Đang dự đoán với mô hình...")
             try:
                 model_prob = model.predict_proba(X_processed)[:, 1]
                 model_pred = model.predict(X_processed)
                 
-                st.write("### So sánh kết quả:")
-                st.write(f"Mô hình XGBoost: {model_prob[0]:.2%} xác suất gian lận")
-                st.write(f"Tính toán trực tiếp: {fraud_probability:.2%} xác suất gian lận")
-                
                 # Quyết định sử dụng kết quả từ tính toán trực tiếp, không phải từ model
                 # để đảm bảo kết quả đa dạng dựa trên input
-                st.write("**Sử dụng kết quả tính toán trực tiếp để hiển thị**")
             except Exception as e:
                 st.warning(f"Không thể dự đoán với mô hình XGBoost: {e}")
                 model_prob = np.array([fraud_probability])
@@ -628,7 +606,7 @@ if app_mode == "Tổng quan":
         # Biểu đồ phân bố rủi ro
         risk_dist_img = load_image('risk_distribution.png')
         if risk_dist_img:
-            st.image(risk_dist_img, caption="Phân bố danh mục rủi ro", use_column_width=True)
+            st.image(risk_dist_img, caption="Phân bố danh mục rủi ro", use_container_width=True)
 
 # TRANG 2: PHÂN TÍCH DỮ LIỆU
 elif app_mode == "Phân tích dữ liệu":
@@ -666,13 +644,13 @@ elif app_mode == "Phân tích dữ liệu":
             # Biểu đồ phân bố danh mục rủi ro
             risk_dist_img = load_image('risk_distribution.png')
             if risk_dist_img:
-                st.image(risk_dist_img, caption="Phân bố danh mục rủi ro", use_column_width=True)
+                st.image(risk_dist_img, caption="Phân bố danh mục rủi ro", use_container_width=True)
 
         with col2:
             # Biểu đồ tỷ lệ gian lận theo danh mục
             fraud_rate_img = load_image('fraud_rate_by_risk.png')
             if fraud_rate_img:
-                st.image(fraud_rate_img, caption="Tỷ lệ gian lận theo danh mục rủi ro", use_column_width=True)
+                st.image(fraud_rate_img, caption="Tỷ lệ gian lận theo danh mục rủi ro", use_container_width=True)
 
         # Đánh giá mô hình
         st.markdown("---")
@@ -684,13 +662,13 @@ elif app_mode == "Phân tích dữ liệu":
             # Đường cong ROC
             roc_img = load_image('roc_curves.png')
             if roc_img:
-                st.image(roc_img, caption="Đường cong ROC", use_column_width=True)
+                st.image(roc_img, caption="Đường cong ROC", use_container_width=True)
 
         with col2:
             # Ma trận nhầm lẫn
             cm_img = load_image('confusion_matrices.png')
             if cm_img:
-                st.image(cm_img, caption="Ma trận nhầm lẫn", use_column_width=True)
+                st.image(cm_img, caption="Ma trận nhầm lẫn", use_container_width=True)
 
         # Đặc trưng quan trọng
         st.markdown("---")
@@ -698,7 +676,7 @@ elif app_mode == "Phân tích dữ liệu":
 
         feature_img = load_image('xgb_feature_importance.png')
         if feature_img:
-            st.image(feature_img, caption="Top đặc trưng quan trọng nhất", use_column_width=True)
+            st.image(feature_img, caption="Top đặc trưng quan trọng nhất", use_container_width=True)
 
     else:
         st.warning("Không thể tải dữ liệu kết quả. Vui lòng chạy các script xử lý trước!")
@@ -989,10 +967,6 @@ elif app_mode == "Đánh giá thủ công":
                 'merchant_state': merchant_state,
                 'errors': error_code
             }
-            
-            # Hiển thị thông tin chi tiết về dữ liệu đầu vào
-            st.write("### Thông tin chi tiết đầu vào:")
-            st.json(data)
             
             # Tạo DataFrame với kiểu dữ liệu rõ ràng
             transaction_data = pd.DataFrame([data])
