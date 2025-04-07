@@ -11,6 +11,9 @@ import os
 import pickle
 import time
 from scipy import sparse
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings('ignore')
 
 print("GIAI ĐOẠN 4: HUẤN LUYỆN MÔ HÌNH PHÁT HIỆN GIAN LẬN")
 print("-" * 50)
@@ -33,20 +36,37 @@ print(f"Tỷ lệ gian lận trong tập kiểm tra: {np.mean(y_test) * 100:.2f}
 
 # Bước 1: Cân bằng lại dữ liệu với SMOTE
 print("\nĐang cân bằng dữ liệu với SMOTE...")
+start_time = time.time()
 smote = SMOTE(random_state=42)
 X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+smote_time = time.time() - start_time
 
 print(f"Kích thước tập huấn luyện sau SMOTE: {X_train_resampled.shape}")
-print(f"Phân bố lớp sau SMOTE: {np.bincount(y_train_resampled)}")
+print(f"Phân bố lớp sau SMOTE: {np.bincount(y_train_resampled.astype(int))}")
 print(f"Tỷ lệ gian lận sau SMOTE: {np.mean(y_train_resampled) * 100:.2f}%")
+print(f"Thời gian SMOTE: {smote_time:.2f} giây")
 
 # Bước 2: Huấn luyện mô hình Random Forest cơ bản
 print("\nHuấn luyện mô hình Random Forest cơ bản...")
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42,
+    n_jobs=-1,
+    verbose=1  # Hiển thị progress
+)
+
+# Ước lượng thời gian huấn luyện
+sample_size = min(1000, X_train_resampled.shape[0])
+start_time = time.time()
+rf_model.fit(X_train_resampled[:sample_size], y_train_resampled[:sample_size])
+estimated_time = (time.time() - start_time) * (X_train_resampled.shape[0] / sample_size)
+print(f"Ước lượng thời gian huấn luyện Random Forest: {estimated_time/60:.1f} phút")
+
+# Huấn luyện thực tế
 start_time = time.time()
 rf_model.fit(X_train_resampled, y_train_resampled)
 rf_train_time = time.time() - start_time
-print(f"Thời gian huấn luyện Random Forest: {rf_train_time:.2f} giây")
+print(f"Thời gian huấn luyện Random Forest thực tế: {rf_train_time/60:.1f} phút")
 
 # Đánh giá mô hình Random Forest
 print("\nĐánh giá mô hình Random Forest trên tập kiểm tra...")
@@ -64,12 +84,22 @@ xgb_model = xgb.XGBClassifier(
     objective='binary:logistic',
     scale_pos_weight=scale_pos_weight,
     random_state=42,
-    n_jobs=-1
+    n_jobs=-1,
+    verbosity=1  # Hiển thị progress
 )
+
+# Ước lượng thời gian huấn luyện
+sample_size = min(1000, X_train_resampled.shape[0])
+start_time = time.time()
+xgb_model.fit(X_train_resampled[:sample_size], y_train_resampled[:sample_size])
+estimated_time = (time.time() - start_time) * (X_train_resampled.shape[0] / sample_size)
+print(f"Ước lượng thời gian huấn luyện XGBoost: {estimated_time/60:.1f} phút")
+
+# Huấn luyện thực tế
 start_time = time.time()
 xgb_model.fit(X_train_resampled, y_train_resampled)
 xgb_train_time = time.time() - start_time
-print(f"Thời gian huấn luyện XGBoost: {xgb_train_time:.2f} giây")
+print(f"Thời gian huấn luyện XGBoost thực tế: {xgb_train_time/60:.1f} phút")
 
 # Đánh giá mô hình XGBoost
 print("\nĐánh giá mô hình XGBoost trên tập kiểm tra...")
@@ -102,7 +132,18 @@ if optimize_hyperparams:
         verbose=1
     )
 
+    # Ước lượng thời gian tối ưu hóa
+    sample_size = min(1000, X_train_resampled.shape[0])
+    start_time = time.time()
+    grid_search.fit(X_train_resampled[:sample_size], y_train_resampled[:sample_size])
+    estimated_time = (time.time() - start_time) * (X_train_resampled.shape[0] / sample_size) * len(param_grid)
+    print(f"Ước lượng thời gian tối ưu hóa: {estimated_time/60:.1f} phút")
+
+    # Tối ưu hóa thực tế
+    start_time = time.time()
     grid_search.fit(X_train_resampled, y_train_resampled)
+    optimization_time = time.time() - start_time
+    print(f"Thời gian tối ưu hóa thực tế: {optimization_time/60:.1f} phút")
 
     print(f"Tham số tối ưu: {grid_search.best_params_}")
     print(f"AUC tốt nhất từ CV: {grid_search.best_score_:.4f}")
