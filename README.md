@@ -1,137 +1,137 @@
-# HỆ THỐNG PHÁT HIỆN VÀ ĐÁNH GIÁ RỦI RO GIAN LẬN
+# FRAUD DETECTION AND RISK ASSESSMENT SYSTEM
 
-Hệ thống sử dụng học máy để phát hiện giao dịch gian lận và đánh giá mức độ rủi ro. Demo được thiết kế để trình bày trong seminar chủ đề "Fraud Detection/Fraud Rating System".
+The system uses machine learning to detect fraudulent transactions and assess risk levels. This demo is designed for presentation in a seminar on "Fraud Detection/Fraud Rating System".
 
-## Cấu trúc dự án
+## Project Structure
 
-Dự án được chia thành các module độc lập để dễ dàng demo từng giai đoạn:
+The project is divided into independent modules for easy demonstration of each stage:
 
-1. **Tải và kết hợp dữ liệu** (`1-data-loading.py`): Đọc dữ liệu giao dịch và nhãn gian lận từ file JSON
-2. **Làm sạch dữ liệu** (`2-data-cleaning.py`): Xử lý dữ liệu thiếu, giá trị ngoại lai và phân tích dữ liệu
-3. **Tiền xử lý và tạo đặc trưng** (`3-feature-engineering.py`): Tạo đặc trưng mới và chuẩn hóa dữ liệu
-4. **Huấn luyện mô hình** (`4-model-training.py`): Huấn luyện và đánh giá các mô hình phát hiện gian lận
-5. **Hệ thống đánh giá rủi ro** (`5-risk-rating.py`): Xây dựng hệ thống phân loại và đánh giá mức độ rủi ro
-6. **Ứng dụng demo** (`6-fraud-detection-app.py`): Giao diện trực quan để tương tác với hệ thống
+1. **Data Loading and Integration** (`1-data-loading.py`): Reads transaction data and fraud labels from JSON files
+2. **Data Cleaning** (`2-data-cleaning.py`): Handles missing data, outliers, and data analysis
+3. **Preprocessing and Feature Engineering** (`3-feature-engineering.py`): Creates new features and standardizes data
+4. **Model Training** (`4-model-training.py`): Trains and evaluates fraud detection models
+5. **Risk Rating System** (`5-risk-rating.py`): Builds a classification and risk level assessment system
+6. **Demo Application** (`6-fraud-detection-app.py`): Visual interface for interacting with the system
 
-## Yêu cầu hệ thống
+## System Requirements
 
-### Môi trường Python
-- Python 3.7 trở lên
-- Các thư viện cần thiết được liệt kê trong `requirements.txt`
+### Python Environment
+- Python 3.7 or higher
+- Required libraries listed in `requirements.txt`
 
-### Cài đặt
+### Installation
 
 ```bash
-# Tạo môi trường ảo
+# Create virtual environment
 python -m venv fraud-detection-venv
 
-# Kích hoạt môi trường ảo
+# Activate virtual environment
 # Windows
 fraud-detection-venv\Scripts\activate
 # Linux/Mac
 source fraud-detection-venv/bin/activate
 
-# Cài đặt các thư viện cần thiết
+# Install required libraries
 pip install -r requirements.txt
 ```
 
-## Chạy demo
+## Running the Demo
 
-### Chạy từng bước
+### Running Individual Steps
 
-Bạn có thể chạy từng bước riêng biệt để demo quy trình chi tiết:
+You can run each step separately to demonstrate the detailed process:
 
 ```bash
-# Bước 1: Tải và kết hợp dữ liệu
+# Step 1: Data Loading and Integration
 python 1-data-loading.py
 
-# Bước 2: Làm sạch dữ liệu
+# Step 2: Data Cleaning
 python 2-data-cleaning.py
 
-# Bước 3: Tiền xử lý và tạo đặc trưng
+# Step 3: Preprocessing and Feature Engineering
 python 3-feature-engineering.py
 
-# Bước 4: Huấn luyện mô hình
+# Step 4: Model Training
 python 4-model-training.py
 
-# Bước 5: Hệ thống đánh giá rủi ro
+# Step 5: Risk Rating System
 python 5-risk-rating.py
 
-# Bước 6: Chạy ứng dụng demo
+# Step 6: Run Demo Application
 streamlit run 6-fraud-detection-app.py
 ```
 
-### Chạy toàn bộ quy trình
+### Running the Complete Process
 
-Để chạy tất cả các bước một cách tự động, sử dụng script `run-all.py`:
+To run all steps automatically, use the `run-all.py` script:
 
 ```bash
-# Chạy toàn bộ quy trình
+# Run complete process
 python run-all.py
 
-# Chỉ chạy ứng dụng demo (giả sử đã chạy các bước trước đó)
+# Run only demo application (assuming previous steps completed)
 python run-all.py --app
 
-# Bỏ qua bước huấn luyện mô hình (sử dụng mô hình có sẵn)
+# Skip model training (use existing model)
 python run-all.py --skip-training
 
-# Bắt đầu từ một bước cụ thể
+# Start from specific step
 python run-all.py --start-from 3
 
-# Chỉ chạy một bước cụ thể
+# Run only specific step
 python run-all.py --only 4
 ```
 
-## Dữ liệu
+## Data
 
-Hệ thống sử dụng bộ dữ liệu từ Kaggle: [Transactions Fraud Datasets](https://www.kaggle.com/datasets/computingvictor/transactions-fraud-datasets)
+The system uses datasets from Kaggle: [Transactions Fraud Datasets](https://www.kaggle.com/datasets/computingvictor/transactions-fraud-datasets)
 
-### Cấu trúc dữ liệu
+### Data Structure
 
-- `train_transaction.csv`: Dữ liệu giao dịch
-- `train_fraud_labels.json`: Nhãn gian lận cho các giao dịch
+- `train_transaction.csv`: Transaction data
+- `train_fraud_labels.json`: Fraud labels for transactions
 
-### Thư mục đầu ra
+### Output Directory
 
-Các kết quả phân tích và mô hình được lưu trong thư mục `output/`:
+Analysis results and models are saved in the `output/` directory:
 
-- `combined_data.csv`: Dữ liệu đã kết hợp
-- `cleaned_data.csv`: Dữ liệu đã làm sạch
-- `best_model.pkl`: Mô hình phát hiện gian lận tốt nhất
-- `preprocessor.pkl`: Bộ tiền xử lý dữ liệu
-- `risk_rating_system.pkl`: Hệ thống đánh giá rủi ro
-- `fraud_risk_assessment_results.csv`: Kết quả đánh giá rủi ro
-- Các biểu đồ và hình ảnh trực quan hóa
+- `combined_data.csv`: Combined data
+- `cleaned_data.csv`: Cleaned data
+- `best_model.pkl`: Best fraud detection model
+- `preprocessor.pkl`: Data preprocessor
+- `risk_rating_system.pkl`: Risk rating system
+- `fraud_risk_assessment_results.csv`: Risk assessment results
+- Various charts and visualizations
 
-## Các tính năng chính của ứng dụng demo
+## Key Features of the Demo Application
 
-1. **Tổng quan**: Giới thiệu về hệ thống và kiến trúc
-2. **Phân tích dữ liệu**: Đánh giá hiệu suất mô hình qua các biểu đồ
-3. **Mẫu giao dịch**: Xem và phân tích các giao dịch mẫu với đánh giá rủi ro
-4. **Đánh giá thủ công**: Nhập thông tin giao dịch mới và nhận kết quả đánh giá
-5. **Hướng dẫn sử dụng**: Chi tiết cách sử dụng hệ thống
+1. **Overview**: Introduction to the system and architecture
+2. **Data Analysis**: Model performance evaluation through charts
+3. **Sample Transactions**: View and analyze sample transactions with risk assessments
+4. **Manual Assessment**: Input new transaction information and receive assessment results
+5. **User Guide**: Detailed system usage instructions
 
-## Danh mục rủi ro
+## Risk Categories
 
-Hệ thống phân loại giao dịch thành 4 danh mục rủi ro:
+The system classifies transactions into 4 risk categories:
 
-1. **Rủi ro thấp (0-20)**: Cho phép giao dịch tự động
-2. **Rủi ro trung bình (21-50)**: Yêu cầu xác thực bổ sung (OTP, sinh trắc học)
-3. **Rủi ro cao (51-80)**: Chuyển cho nhân viên kiểm tra thủ công
-4. **Rủi ro rất cao (81-100)**: Tạm dừng giao dịch và liên hệ khách hàng
+1. **Low Risk (0-20)**: Allow automatic transaction processing
+2. **Medium Risk (21-50)**: Require additional verification (OTP, biometrics)
+3. **High Risk (51-80)**: Forward to staff for manual review
+4. **Very High Risk (81-100)**: Suspend transaction and contact customer
 
-## Các file lịch sử giao dịch
+## Transaction History Files
 
-Ứng dụng demo cho phép bạn xem các giao dịch mẫu với phân loại rủi ro, giúp hiểu rõ cách hệ thống hoạt động. Đồng thời, bạn có thể tạo và đánh giá các giao dịch mới để kiểm thử khả năng phát hiện gian lận của hệ thống.
+The demo application allows you to view sample transactions with risk classifications, helping to understand how the system works. Additionally, you can create and evaluate new transactions to test the system's fraud detection capabilities.
 
-## Hướng phát triển
+## Future Development
 
-- Thêm mô hình dựa trên học sâu (deep learning) để phát hiện các mẫu gian lận phức tạp
-- Tích hợp phân tích hành vi người dùng (behavioral analytics)
-- Xây dựng hệ thống học liên tục (continuous learning) để cập nhật mô hình với dữ liệu mới
-- Phát triển API để tích hợp vào các hệ thống thanh toán trực tuyến
+- Add deep learning models to detect complex fraud patterns
+- Integrate behavioral analytics
+- Build continuous learning system to update models with new data
+- Develop API for integration with online payment systems
 
-## Liên hệ
+## Contact
 
-Nếu có bất kỳ câu hỏi hoặc góp ý nào, vui lòng liên hệ:
+For any questions or feedback, please contact:
 - Email: phamngocthaison@gmail.com
